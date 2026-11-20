@@ -1,14 +1,12 @@
-# NeonClipping
+# Cliping Tool By JAY
 
 **Paste a link. Get captioned 9:16 clips in about two minutes. Free, local, open-source.**
 
-NeonClipping turns long YouTube / Twitch / Kick videos (or your own MP4) into vertical, captioned clips with a title and hook for each. Everything runs on your machine: no account, no subscription, no upload.
+Cliping Tool By JAY turns long YouTube / Twitch / Kick videos (or your own MP4) into vertical, captioned clips with a title and hook for each. Everything runs on your machine: no account, no subscription, no upload.
 
-[![Star on GitHub](https://img.shields.io/github/stars/iamajmeena/neonclipping?style=for-the-badge&logo=github&label=Star%20on%20GitHub)](https://github.com/iamajmeena/neonclipping) [![Instagram](https://img.shields.io/badge/Follow-%40iamajmeena-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/iamajmeena/)
+[![Star on GitHub](https://img.shields.io/badge/GitHub-JayAutomations-blue?style=for-the-badge&logo=github)](https://github.com/JayAutomations) [![Instagram](https://img.shields.io/badge/Follow-%40jayautomations-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/jayautomations/)
 
-🌐 **Website with one-click Windows setup:** <https://iamajmeena.github.io/neonclipping/>
-
-**Made by [Ajay K Meena](https://www.instagram.com/iamajmeena/)** (Director, DOP, colorist, DaVinci Resolve educator, Jaipur). If NeonClipping saves you time, please ⭐ star the repo and follow [@iamajmeena](https://www.instagram.com/iamajmeena/) on Instagram.
+**Made by [JAY Automations](https://www.instagram.com/jayautomations/)**. If this tool saves you time, please ⭐ star the repo and follow [@jayautomations](https://www.instagram.com/jayautomations/) on Instagram.
 
 ![demo](docs/demo.gif)
 
@@ -199,7 +197,7 @@ The **Find my facecam** chip (or "find it automatically when I press Make clips"
 
 ## Support
 
-NeonClipping is free. If it saves you time you can ⭐ star the repo, follow [@iamajmeena](https://www.instagram.com/iamajmeena/), or optionally donate via Razorpay (UPI / cards): <https://rzp.io/rzp/JN41CpW>. The app also has a ♥ Donate button. Nothing is ever locked behind a donation.
+This tool is free and open-source. If it saves you time you can ⭐ star the repo, follow [@jayautomations](https://www.instagram.com/jayautomations/), or optionally donate via PayPal: `Wajid.Gorizia@gmail.com`. The app also has a ♥ Donate button. Nothing is ever locked behind a donation.
 
 ## Credits and inspiration
 
