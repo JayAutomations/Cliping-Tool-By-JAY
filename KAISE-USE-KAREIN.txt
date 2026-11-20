@@ -1,0 +1,43 @@
+=====================================================
+          CLIPING TOOL BY JAY - KAISE USE KAREIN
+=====================================================
+
+Yeh tool lambi videos (YouTube, Twitch, Kick ya MP4) ko 
+auto-captioned 9:16 vertical clips (Shorts/Reels/TikTok) 
+mein convert karta hai. Yeh 100% free hai aur aapke PC 
+par hi offline chalta hai.
+
+-----------------------------------------------------
+1. PEHLI BAAR SETUP (SIRF EK BAAR):
+-----------------------------------------------------
+1. Is ZIP file par Right-Click karein aur "Extract All..." (unzip) karein.
+2. Jo naya folder banega, uske andar jayein.
+3. "Start-Cliping-Tool-By-JAY.bat" file par DOUBLE-CLICK karein.
+4. Pehli baar yeh tool zaroori files aur packages taiyar karega
+   (isme 2-3 minute lag sakte hain).
+5. Jaise hi taiyar hoga, aapke Google Chrome ya browser mein
+   yeh address apne aap khul jayega:
+   http://127.0.0.1:8770
+
+-----------------------------------------------------
+2. CLIPS KAISE BANANI HAIN:
+-----------------------------------------------------
+1. "Start-Cliping-Tool-By-JAY.bat" par double-click karke tool chalu karein.
+2. Browser mein video link paste karein (ya "Upload video" se MP4 daalein).
+3. "Facecam position" select karein jahan webcam hai (Top-left, Top-right, etc.).
+4. "⚡ Make clips" button dabayein.
+5. 1 se 2 minute mein video ke best moments vertical clip bankar aayenge!
+6. "Download MP4" button dabakar clip save kar lein.
+
+-----------------------------------------------------
+3. TOOL BAND KAISE KAREIN:
+-----------------------------------------------------
+Jo black terminal window khuli hai, bas use close (X) kar dein.
+
+-----------------------------------------------------
+Developer & Support:
+- Created by: JAY Automations
+- Instagram: @jayautomations
+- GitHub: https://github.com/JayAutomations/Cliping-Tool-By-JAY
+- PayPal Donate: Wajid.Gorizia@gmail.com
+=====================================================
