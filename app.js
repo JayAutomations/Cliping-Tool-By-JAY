@@ -57,7 +57,7 @@ $('batch').onclick=async()=>{const button=$('batch');button.disabled=true;$('exp
 const lazyObserver=('IntersectionObserver' in window)?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.preload='metadata';e.target.load();lazyObserver.unobserve(e.target);}}),{rootMargin:'400px'}):null;
 function appendVisualReview(parent,review){if(!review?.frames?.length)return;const details=document.createElement('details'),title=document.createElement('summary');title.textContent='AI frame observations';details.append(title);const grid=document.createElement('div');grid.className='vision-grid';review.frames.forEach((frame,index)=>{const figure=document.createElement('figure'),image=document.createElement('img'),caption=document.createElement('figcaption');image.loading='lazy';if(/^\/vision\/frame\/[a-f0-9]{64}\/[012]$/.test(frame.image||''))image.src=frame.image;image.alt='Scene sample '+(index+1);caption.textContent=frame.description;figure.append(image,caption);grid.append(figure);});details.append(grid);parent.append(details);}
 function lazyVideo(v){if(lazyObserver){v.preload='none';lazyObserver.observe(v);}else v.preload='metadata';}
-async function refreshLibrary(){const clips=await request('/library');$('library-count').textContent=clips.length;const host=$('library');host.replaceChildren();if(!clips.length){const empty=document.createElement('div');empty.className='empty-library';empty.textContent='Your first clip belongs here. Export a moment to start your library.';host.append(empty);}for(const clip of clips){const card=document.createElement('article');card.className='clip-card';const video=document.createElement('video');video.src='/media/'+clip.id;video.controls=true;lazyVideo(video);const title=document.createElement('h3');title.textContent=clip.title;const meta=document.createElement('p');meta.textContent=(clip.meta.duration||0).toFixed(1)+' seconds · '+(clip.settings.layout||'stack')+' · '+new Date(clip.created*1000).toLocaleDateString();const links=document.createElement('div');links.className='card-links';const download=document.createElement('a');download.href='/media/'+clip.id;download.download='neonclipping-'+clip.id+'.mp4';download.textContent='↓ MP4';links.append(download);if(clip.srt){const sub=document.createElement('a');sub.href='/text/'+clip.id+'/srt';sub.textContent='↓ SRT';links.append(sub);}const edit=document.createElement('button');edit.textContent='Edit clip';edit.onclick=()=>openSavedClip(clip.id).catch(e=>status(e.message));links.append(edit);card.append(video,title,meta,links);appendVisualReview(card,clip.settings.visual_review);host.append(card);}}
+async function refreshLibrary(){const clips=await request('/library');$('library-count').textContent=clips.length;const host=$('library');host.replaceChildren();if(!clips.length){const empty=document.createElement('div');empty.className='empty-library';empty.textContent='Your first clip belongs here. Export a moment to start your library.';host.append(empty);}for(const clip of clips){const card=document.createElement('article');card.className='clip-card';card.dataset.file=clip.id;const selectBar=document.createElement('label');selectBar.className='clip-select-bar';const chk=document.createElement('input');chk.type='checkbox';chk.checked=true;chk.className='lib-clip-chk';chk.dataset.file=clip.id;chk.onchange=updateLibBulk;const chkTxt=document.createElement('span');chkTxt.textContent=' Select';selectBar.append(chk,chkTxt);card.append(selectBar);const video=document.createElement('video');video.src='/media/'+clip.id;video.controls=true;lazyVideo(video);const title=document.createElement('h3');title.textContent=clip.title;const meta=document.createElement('p');meta.textContent=(clip.meta.duration||0).toFixed(1)+' seconds · '+(clip.settings.layout||'stack')+' · '+new Date(clip.created*1000).toLocaleDateString();const links=document.createElement('div');links.className='card-links';const download=document.createElement('a');download.href='/media/'+clip.id;download.download='neonclipping-'+clip.id+'.mp4';download.textContent='↓ MP4';links.append(download);if(clip.srt){const sub=document.createElement('a');sub.href='/text/'+clip.id+'/srt';sub.textContent='↓ SRT';links.append(sub);}const edit=document.createElement('button');edit.textContent='Edit clip';edit.onclick=()=>openSavedClip(clip.id).catch(e=>status(e.message));links.append(edit);card.append(video,title,meta,links);appendVisualReview(card,clip.settings.visual_review);host.append(card);}updateLibBulk();}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));$('editor-view').hidden=b.dataset.view!=='editor';$('library-view').hidden=b.dataset.view!=='library';if(b.dataset.view==='library')refreshLibrary().catch(e=>status(e.message));});$('refresh-library').onclick=()=>refreshLibrary().catch(e=>status(e.message));
 request('/highlights').then(showHighlights).catch(e=>status(e.message));refreshLibrary().catch(e=>status(e.message));
 
@@ -69,8 +69,8 @@ $('make').onclick=async()=>{const url=$('url').value.trim();if(!url&&!id){status
    (s.clips||[]).forEach(c=>{if(shown.has(c.file))return;shown.add(c.file);const d=document.createElement('div');d.className='mk';d.dataset.file=c.file;
     if(c.error){d.textContent='Failed: '+c.error.slice(0,120);}else{const vid=document.createElement('video');vid.src='/media/'+c.file;vid.controls=true;vid.preload='metadata';const t=document.createElement('b');t.textContent=c.title;const m=document.createElement('small');m.textContent=Math.round(c.start)+'–'+Math.round(c.end)+'s · score '+c.score+(c.hook?' · "'+c.hook+'"':'');const a=document.createElement('a');a.href='/media/'+c.file;a.download='neonclipping-'+c.file+'.mp4';a.textContent='Download MP4';const rs=document.createElement('small');rs.textContent=c.reason||'';const vb=document.createElement('div');vb.className='viral';const ax=c.axes||{};const fmt=v=>v==null?'–':v;vb.title='Viral score is a heuristic: loudness, shouting, what is said, on-screen action and a local AI read. Your star ratings tune it.';vb.innerHTML='<b>🔥 Viral '+(c.viral??'–')+'</b><span>Energy '+fmt(ax.energy)+'</span><span>Action '+fmt(ax.action)+'</span><span>Words '+fmt(ax.words)+'</span><span>AI '+fmt(ax.ai)+'</span>';const stars=document.createElement('div');stars.className='stars';stars.title='Rate this clip: it teaches NeonClipping what a good clip is';
     for(let n=1;n<=5;n++){const sb=document.createElement('button');sb.textContent='★';sb.onclick=async()=>{try{const r=await request('/feedback',{file:c.file,rating:n});[...stars.children].forEach((x,i)=>x.classList.toggle('on',i<n));fb.textContent='Thanks! Learning from '+r.ratings+' rating'+(r.ratings===1?'':'s')+(r.fitted?' · '+(r.insight[0]||''):' (needs 8 to start adapting)');}catch(e){fb.textContent=e.message;}};stars.append(sb);}
-    const fb=document.createElement('small');fb.className='fb';fb.textContent='Rate this clip ↑';const edit=document.createElement('button');edit.textContent='Edit clip';edit.onclick=()=>openSavedClip(d.dataset.file).catch(e=>status(e.message));d.append(vid,t,vb,m,rs,a,edit,stars,fb);}
-    appendVisualReview(d,c.visual_review);$('make-grid').append(d);});
+    const fb=document.createElement('small');fb.className='fb';fb.textContent='Rate this clip ↑';const edit=document.createElement('button');edit.textContent='Edit clip';edit.onclick=()=>openSavedClip(d.dataset.file).catch(e=>status(e.message));const selectBar=document.createElement('label');selectBar.className='clip-select-bar';const chk=document.createElement('input');chk.type='checkbox';chk.checked=true;chk.className='make-clip-chk';chk.dataset.file=c.file;chk.onchange=updateMakeBulk;const chkTxt=document.createElement('span');chkTxt.textContent=' Select';selectBar.append(chk,chkTxt);d.append(selectBar,vid,t,vb,m,rs,a,edit,stars,fb);}
+    appendVisualReview(d,c.visual_review);$('make-grid').append(d);updateMakeBulk();});
    if(s.status==='error')throw Error(s.error);if(s.status==='done'){if(!(s.clips||[]).length){$('make-status').textContent=s.stage||'No moments matched. Broaden your filters and try again.';break;}$('make-status').textContent='Done · '+(s.clips||[]).length+' clips in '+s.elapsed_seconds+'s · also in My clips ('+(s.engine||'')+')';if(!$('make-results').querySelector('.star-ask')){const q=document.createElement('div');q.className='star-ask';q.innerHTML='Free and open-source. If these clips saved you time, <a href="https://github.com/JayAutomations" target="_blank" rel="noopener">★ star on GitHub</a> and follow <a href="https://www.instagram.com/jayautomations/" target="_blank" rel="noopener">@jayautomations</a> for more tools.';$('make-results').append(q);}break;}
    await sleep(1000);}}catch(e){$('make-status').textContent=e.message;}finally{b.disabled=false;}};
 
@@ -242,3 +242,76 @@ for(const key of ['aspect','resolution'])$(key).addEventListener('change',()=>lo
 
 $('timing-editor').onchange=renderWords;
 $('shift-captions').onclick=()=>{try{const current=collectWords();if(!current?.length)throw Error('Generate or import subtitles first.');const offset=Number($('caption-shift').value);if(!Number.isFinite(offset))throw Error('Choose a valid shift.');const shifted=current.map(w=>({...w,start:w.start+offset,end:w.end+offset}));const duration=Number($('end').value)-Number($('start').value);if(shifted.some(w=>w.start<0||w.end>duration+.1))throw Error('That shift places words outside the clip. Choose a smaller shift.');words=shifted;renderWords();status('Subtitle times shifted by '+offset+' seconds. Apply or export to update the video.');}catch(e){status(e.message);}};
+
+// Bulk download controls (Cliping Tool By JAY)
+function getSelectedFiles(selector) {
+  return [...document.querySelectorAll(selector + ':checked')].map(cb => cb.dataset.file).filter(Boolean);
+}
+
+function updateMakeBulk() {
+  const all = [...document.querySelectorAll('.make-clip-chk')];
+  const checked = all.filter(c => c.checked);
+  if ($('make-selected-count')) $('make-selected-count').textContent = checked.length;
+  if ($('make-select-all')) $('make-select-all').checked = all.length > 0 && checked.length === all.length;
+  if ($('make-bulk-toolbar')) $('make-bulk-toolbar').style.display = all.length > 0 ? 'flex' : 'none';
+}
+
+function updateLibBulk() {
+  const all = [...document.querySelectorAll('.lib-clip-chk')];
+  const checked = all.filter(c => c.checked);
+  if ($('lib-selected-count')) $('lib-selected-count').textContent = checked.length;
+  if ($('lib-select-all')) $('lib-select-all').checked = all.length > 0 && checked.length === all.length;
+}
+
+async function bulkDownloadClips(files, asZip) {
+  if (!files || !files.length) {
+    alert('Kripya download karne ke liye kam se kam ek clip select karein!');
+    return;
+  }
+  if (asZip) {
+    try {
+      status('ZIP bundle taiyar ho raha hai...');
+      const b = await request('/bundles', { files });
+      if (b && b.download) {
+        const a = document.createElement('a');
+        a.href = b.download;
+        a.download = 'Cliping-Tool-By-JAY-Clips.zip';
+        document.body.append(a);
+        a.click();
+        a.remove();
+        status('ZIP bundle ready! Download shuru ho gaya.');
+      }
+    } catch (e) {
+      alert('ZIP download failed: ' + e.message);
+    }
+    return;
+  }
+  status(files.length + ' clips download ho rahi hain...');
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const a = document.createElement('a');
+    a.href = '/media/' + f;
+    a.download = 'clip-' + (i + 1) + '-' + f + '.mp4';
+    document.body.append(a);
+    a.click();
+    a.remove();
+    await sleep(350);
+  }
+  status('Sabhi selected clips download ho gayi!');
+}
+
+if ($('make-select-all')) $('make-select-all').onchange = () => {
+  const on = $('make-select-all').checked;
+  document.querySelectorAll('.make-clip-chk').forEach(c => c.checked = on);
+  updateMakeBulk();
+};
+if ($('make-download-selected')) $('make-download-selected').onclick = () => bulkDownloadClips(getSelectedFiles('.make-clip-chk'), false);
+if ($('make-download-zip')) $('make-download-zip').onclick = () => bulkDownloadClips(getSelectedFiles('.make-clip-chk'), true);
+
+if ($('lib-select-all')) $('lib-select-all').onchange = () => {
+  const on = $('lib-select-all').checked;
+  document.querySelectorAll('.lib-clip-chk').forEach(c => c.checked = on);
+  updateLibBulk();
+};
+if ($('lib-download-selected')) $('lib-download-selected').onclick = () => bulkDownloadClips(getSelectedFiles('.lib-clip-chk'), false);
+if ($('lib-download-zip')) $('lib-download-zip').onclick = () => bulkDownloadClips(getSelectedFiles('.lib-clip-chk'), true);

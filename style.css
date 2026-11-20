@@ -122,3 +122,208 @@ details.panel>summary{cursor:pointer;list-style:none;font-size:16px}details.pane
 .transcript-passage{padding:16px;margin:12px 0;border:1px solid var(--line);border-radius:12px}.transcript-passage .chip{margin:5px}.transcript-passage .chip.active{border-color:var(--pink)}#tr-results{max-height:600px;overflow:auto}#tr-text{width:100%;box-sizing:border-box}
 
 .vision-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.vision-grid figure{margin:10px 0;padding:8px;background:#100d18;border-radius:10px}.vision-grid img{width:100%;height:auto;display:block}.vision-grid figcaption{font-size:12px;line-height:1.45;color:var(--muted);margin-top:8px}
+
+/* ===================================================
+   CLIPING TOOL BY JAY - ENHANCED CYBER / NEON UI
+=================================================== */
+
+:root {
+  --bg: #090611;
+  --panel: #140e21;
+  --line: #2d1f42;
+  --pink: #ff2a9d;
+  --pink-glow: rgba(255, 42, 157, 0.4);
+  --cyan: #00f5d4;
+  --cyan-glow: rgba(0, 245, 212, 0.35);
+  --purple: #7b2cbf;
+  --lime: #d4fb58;
+  --white: #ffffff;
+  --muted: #b4a2c8;
+}
+
+body {
+  background: radial-gradient(circle at 50% 0%, #1c0e33 0%, #0c0817 50%, #06040a 100%) !important;
+  color: var(--white);
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #100b1d 0%, #0a0614 100%) !important;
+  border-right: 1px solid rgba(255, 42, 157, 0.2) !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+}
+
+.brand {
+  margin-bottom: 40px !important;
+  font-weight: 800 !important;
+}
+
+.brand div {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #ffffff 20%, #ff6bb7 60%, #00f5d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 12px rgba(255, 42, 157, 0.5));
+}
+
+.nav {
+  border-radius: 10px;
+  padding: 11px 14px;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.nav:hover {
+  background: rgba(255, 42, 157, 0.12);
+  color: #fff;
+}
+
+.nav.active {
+  background: linear-gradient(135deg, rgba(255, 42, 157, 0.3), rgba(123, 44, 191, 0.4)) !important;
+  border: 1px solid rgba(255, 42, 157, 0.45);
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(255, 42, 157, 0.25);
+}
+
+html body main>header {
+  background: linear-gradient(135deg, #240b45 0%, #61136b 40%, #b81f6c 75%, #ff5e42 100%) !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 35px rgba(255, 42, 157, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+html body main>header h1 {
+  font-size: 50px !important;
+  letter-spacing: 1px;
+  color: #fff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+html body main>header h1 em {
+  color: #ffe66d !important;
+  text-shadow: 0 0 20px rgba(255, 230, 109, 0.6);
+}
+
+.panel {
+  background: linear-gradient(145deg, rgba(24, 16, 38, 0.9), rgba(16, 11, 26, 0.95)) !important;
+  border: 1px solid rgba(138, 75, 255, 0.25) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+}
+
+.import-panel {
+  border-color: rgba(255, 42, 157, 0.4) !important;
+  box-shadow: 0 10px 35px rgba(255, 42, 157, 0.18);
+}
+
+.primary {
+  background: linear-gradient(135deg, #ff2a9d, #a21caf) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 18px rgba(255, 42, 157, 0.4);
+  transition: all 0.25s ease !important;
+}
+
+.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(255, 42, 157, 0.65);
+}
+
+.primary.make {
+  background: linear-gradient(135deg, #00f5d4 0%, #20e3b2 40%, #d4fb58 100%) !important;
+  color: #061514 !important;
+  font-weight: 800 !important;
+  font-size: 15px !important;
+  box-shadow: 0 4px 20px rgba(0, 245, 212, 0.45) !important;
+  padding: 13px 24px !important;
+}
+
+.primary.make:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 245, 212, 0.7) !important;
+}
+
+.secondary {
+  background: rgba(0, 245, 212, 0.12) !important;
+  border: 1px solid rgba(0, 245, 212, 0.4) !important;
+  color: var(--cyan) !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease;
+}
+
+.secondary:hover {
+  background: rgba(0, 245, 212, 0.22) !important;
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.35);
+}
+
+.bulk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(18, 12, 30, 0.85);
+  border: 1px solid rgba(255, 42, 157, 0.3);
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.bulk-btn {
+  font-size: 13px !important;
+  padding: 9px 15px !important;
+  border-radius: 8px !important;
+}
+
+.clip-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: rgba(255, 42, 157, 0.15);
+  border: 1px solid rgba(255, 42, 157, 0.3);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.clip-select-bar:hover {
+  background: rgba(255, 42, 157, 0.25);
+  border-color: #ff2a9d;
+}
+
+.clip-select-bar input[type=checkbox] {
+  accent-color: #ff2a9d;
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+}
+
+.clip-card, .mk {
+  background: linear-gradient(145deg, #181126, #100b1b) !important;
+  border: 1px solid rgba(138, 75, 255, 0.3) !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.clip-card:hover, .mk:hover {
+  transform: translateY(-4px);
+  border-color: var(--pink) !important;
+  box-shadow: 0 12px 30px rgba(255, 42, 157, 0.25) !important;
+}
+
+.clip-card video, .mk video {
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
