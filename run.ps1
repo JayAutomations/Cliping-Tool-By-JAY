@@ -36,5 +36,30 @@ if (-not (Test-Path .venv/Scripts/python.exe)) {
     python -m venv .venv
     .venv/Scripts/python.exe -m pip install -r requirements.txt
 }
-Start-Process 'http://127.0.0.1:8770'
-.venv/Scripts/python.exe app.py
+
+# Start server and wait until ready before opening browser
+Write-Host "Cliping Tool By JAY server start ho raha hai..." -ForegroundColor Cyan
+$serverProcess = Start-Process -FilePath "$PSScriptRoot\.venv\Scripts\python.exe" -ArgumentList "app.py" -WorkingDirectory "$PSScriptRoot" -PassThru
+
+# Wait for server to be responsive
+$ready = $false
+for ($i = 0; $i -lt 30; $i++) {
+    Start-Sleep -Milliseconds 400
+    try {
+        $res = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/healthz' -TimeoutSec 1 -ErrorAction SilentlyContinue
+        if ($res.ok) {
+            $ready = $true
+            break
+        }
+    } catch {}
+}
+
+if ($ready) {
+    Write-Host "Tool live hai! Browser open kar rahe hain..." -ForegroundColor Green
+    Start-Process 'http://127.0.0.1:8770'
+} else {
+    Write-Host "Server start ho raha hai, browser open kar rahe hain..." -ForegroundColor Yellow
+    Start-Process 'http://127.0.0.1:8770'
+}
+
+$serverProcess.WaitForExit()
