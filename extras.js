@@ -197,7 +197,7 @@
   if (liveBox && !$('lv-len')) {
     const opts = document.createElement('div');
     opts.className = 'controls'; opts.id = 'live-opts';
-    opts.innerHTML = '<label>Clip length<select id="lv-len"><option value="10">10 s (short)</option><option value="20" selected>20 s (reel)</option><option value="30">30 s (viral)</option><option value="0">Auto (38 s)</option></select></label>' +
+    opts.innerHTML = '<label>Clip length<select id="lv-len"><option value="30" selected>30 s (reel)</option><option value="60">60 s (1 min)</option><option value="90">90 s (1.5 min)</option><option value="120">120 s (2 min)</option><option value="20">20 s</option><option value="10">10 s</option><option value="0">Auto (38 s)</option></select></label>' +
       '<label>Hook text<select id="lv-hook"><option value="ai">AI writes it</option><option value="title">Stream title</option><option value="custom">My own text</option></select></label>' +
       '<label id="lv-hook-wrap" hidden>Your hook<input id="lv-hook-text" type="text" maxlength="70" placeholder="Hook text on top"></label>' +
       '<label class="check"><input id="lv-caps" type="checkbox" checked> Captions on live clips (off = faster)</label>';
@@ -210,7 +210,8 @@
     const phoneBox = document.createElement('div');
     phoneBox.className = 'import-note'; phoneBox.id = 'phone-box'; phoneBox.textContent = 'Phone access: checking…';
     liveBox.parentNode.insertBefore(phoneBox, opts.nextSibling);
-    const PRE = { 10: [7, 3], 20: [12, 8], 30: [20, 10], 0: [24, 14] };
+    const PRE = { 10: [7, 3], 20: [14, 6], 30: [20, 10], 60: [40, 20], 90: [60, 30], 120: [80, 40], 0: [24, 14] };
+    $('lv-len').addEventListener('change', () => { const v = Number($('lv-len').value) || 30; if ($('live-now')) $('live-now').textContent = '✂ Clip the last ' + (v || 30) + ' s now'; });
     window.__liveOpts = () => {
       const len = Number($('lv-len').value), [before, after] = PRE[len];
       return { before, after, captions: $('lv-caps').checked, hook_mode: $('lv-hook').value, hook_text: $('lv-hook-text').value.trim() };

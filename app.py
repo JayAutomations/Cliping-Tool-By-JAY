@@ -88,6 +88,24 @@ def library():
   except (ValueError,OSError):pass
  return sorted(records,key=lambda j:j['created'],reverse=True)
 
+@app.post('/clips/delete')
+def delete_clips(body:dict):
+ import re
+ ids=body.get('ids',[])
+ if isinstance(body.get('id'),str):ids.append(body['id'])
+ if not isinstance(ids,list):raise HTTPException(400,'ids must be a list')
+ deleted=0
+ for clip_id in ids:
+  cid=str(clip_id).strip()
+  if not re.fullmatch(r'[a-zA-Z0-9_-]+',cid):continue
+  for ext in ('.mp4','.json','.srt','.ass','.vtt','.words.json','.state.json','.request.json'):
+   p=DATA/(cid+ext)
+   if p.exists():
+    try:p.unlink(missing_ok=True)
+    except Exception:pass
+  deleted+=1
+ return {'ok':True,'deleted':deleted}
+
 def source_range(b):
  id=str(b.get('id',''))
  if not id.isalnum() or not (DATA/(id+'.mp4')).exists():raise HTTPException(400,'Wait for source download, or upload a video.')
@@ -470,7 +488,7 @@ def live_start(b:dict):
  import live_session
  try:target=live_session.parse_target(str(b.get('url','')))
  except ValueError as e:raise HTTPException(400,str(e))
- before=max(4,min(60,float(b.get('before',24))));after=max(2,min(40,float(b.get('after',14))))
+ before=max(4,min(120,float(b.get('before',24))));after=max(2,min(80,float(b.get('after',14))))
  try:sid=start_live(target,b,None,before,after)
  except RuntimeError as e:raise HTTPException(400,str(e))
  return {'live':sid}
@@ -490,7 +508,7 @@ def live_state(lid:str):
 @app.post('/live/{lid}/clip-now')
 def live_clip_now(lid:str,b:dict=None):
  if lid not in LIVE:raise HTTPException(404,'Live session not found.')
- try:secs=max(5,min(60,int((b or {}).get('seconds',30))))
+ try:secs=max(5,min(180,int((b or {}).get('seconds',30))))
  except (TypeError,ValueError):raise HTTPException(400,'seconds must be a number.')
  try:LIVE[lid].clip_now(secs)
  except RuntimeError as e:raise HTTPException(400,str(e))
