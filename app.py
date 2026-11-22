@@ -18,6 +18,22 @@ import curation
 import facecam_detect
 ROOT=Path(__file__).resolve().parent
 DATA=Path(os.environ.get('NEONCLIPPING_DATA_DIR',str(ROOT/'data'))).resolve();DATA.mkdir(parents=True,exist_ok=True)
+
+# PyAV compatibility wrapper for faster-whisper across all av versions
+try:
+    import av
+    _orig_av_open = av.open
+    def _safe_av_open(*args, **kwargs):
+        try:
+            return _orig_av_open(*args, **kwargs)
+        except TypeError as _e:
+            if 'metadata_errors' in str(_e):
+                kwargs.pop('metadata_errors', None)
+                return _orig_av_open(*args, **kwargs)
+            raise
+    av.open = _safe_av_open
+except Exception:
+    pass
 app=FastAPI()
 state={}
 def probe(p):
