@@ -54,9 +54,19 @@ Tarika B: "Select local video or folder" box mein apna path likhein (e.g. D:\Vid
 - Ek click mein quick chip (jaise 3 min, 5 min, ya 10 min) select karke clip banayein.
 
 -----------------------------------------------------
+6. ULTRA-FAST RENDERING AUR HARDWARE ACCELERATION:
+-----------------------------------------------------
+- Intel Iris Xe Quick Sync (QSV) Hardware Acceleration ab active hai! Video rendering CPU ki jagah hardware GPU se hoti hai jo 5x-8x tezz hai.
+- Caption Accuracy Options:
+  1. "⚡ Ultra-Fast: Base Model (Fastest, ~10x speedup)" - Subtitles 2-3 seconds mein ban jaate hain.
+  2. "⚡ Balanced: Small Model (High accuracy)" - High accuracy for Hindi/English gaming videos.
+  3. "🔬 Studio Hindi: large-v3" - Deep model for difficult Hindi speech.
+- Subtitles Toggle: Agar aapko captions nahi chahiye to "Burn in subtitles" ko uncheck karein, clips bina kisi delay ke instant render ho jayengi!
+- Parallel Processing: Ab 2 clips ek sath parallel render hoti hain jisse multi-clip export double tezz ho jata hai.
+
+-----------------------------------------------------
 Developer & Support:
 - Created by: JAY Automations
 - Instagram: @jayautomations
 - GitHub: https://github.com/JayAutomations/Cliping-Tool-By-JAY
-- PayPal Donate: Wajid.Gorizia@gmail.com
-=====================================================
+- PayPal Support: Wajid.Gorizia@gmail.com

@@ -147,7 +147,7 @@ def local_prepare(body:dict):
  else:
   r=subprocess.run(['ffmpeg','-y','-v','error','-i',str(p.resolve()),'-c','copy',str(target_mp4)],capture_output=True,text=True)
   if r.returncode!=0:
-   r2=subprocess.run(['ffmpeg','-y','-v','error','-i',str(p.resolve()),'-c:v','libx264','-preset','fast','-crf','22','-c:a','aac',str(target_mp4)],capture_output=True,text=True)
+   r2=subprocess.run(['ffmpeg','-y','-v','error','-i',str(p.resolve()),'-c:v','libx264','-preset','veryfast','-crf','22','-threads','0','-c:a','aac',str(target_mp4)],capture_output=True,text=True)
    if r2.returncode!=0:raise HTTPException(400,f'Video conversion failed: {r2.stderr[-200:]}')
  meta=probe(target_mp4)
  return {'id':job_id,'name':p.name,**meta}
@@ -170,7 +170,9 @@ def caption_job(b:dict):
  if language not in (None,'hi','en','hinglish'):raise HTTPException(400,'Choose Auto, Hinglish, Hindi or English.')
  def work():
   try:
-   result=transcribe(src,start,end,DATA,lambda msg:state[job].update(message=msg),language)
+   acc=b.get('accurate','fast')
+   asr_model='base' if acc in ('fast','ultra') else (large_v3() if acc=='best' else 'small')
+   result=transcribe(src,start,end,DATA,lambda msg:state[job].update(message=msg),language,asr_model)
    state[job]={'status':'done',**result,'source_id':id,'start':start,'end':end}
   except Exception as e:state[job]={'status':'error','error':'Caption generation failed: '+str(e)[-500:]}
  threading.Thread(target=work,daemon=True).start();return {'job':job}
@@ -215,7 +217,10 @@ def export(b:dict):
      for word in b['words']:
       a=float(word['start']);z=float(word['end']);text=str(word['text'])[:100]
       if math.isfinite(a) and math.isfinite(z) and 0<=a<z<=end-start+.1:words.append({'start':a,'end':z,'text':text})
-    else:words=transcribe(src,start,end,DATA,lambda msg:state[job].update(message=msg),b.get('language') or None)['words']
+    else:
+     acc=b.get('accurate','fast')
+     asr_model='base' if acc in ('fast','ultra') else (large_v3() if acc=='best' else 'small')
+     words=transcribe(src,start,end,DATA,lambda msg:state[job].update(message=msg),b.get('language') or None,asr_model)['words']
    dur=end-start;g2=graph
    if plan:plan.data=DATA;plan.job=job;g2=plan.graph(graph,src,width,height,dur)
    placement=text_positions(layout,top,position,width,height);hook_y=placement['hook_y'];caption_pos=placement['caption_y'];hook_text=str(b.get('hook',''))
@@ -230,7 +235,14 @@ def export(b:dict):
    state[job].update(message='Rendering vertical clip with '+style+' captions' if words else 'Rendering vertical clip')
    base=['ffmpeg','-y','-v','error','-ss',str(start),'-t',str(end-start),'-i',str(src),*(plan.inputs if plan else []),'-filter_complex',fc,'-map','[v]','-map',amap or '0:a?','-t',str(dur),'-c:a','aac','-b:a','160k','-movflags','+faststart']
    if fps:base+=['-r',str(fps),'-fps_mode','cfr']
-   for encoder in [['-c:v','h264_nvenc','-preset','p5','-cq','20'],['-c:v','libx264','-crf','20','-preset','fast']]:
+   encoders = [
+    ['-c:v','h264_qsv','-global_quality','23','-preset','veryfast'],
+    ['-c:v','h264_mf','-b:v','6M'],
+    ['-c:v','h264_nvenc','-preset','p4','-cq','21'],
+    ['-c:v','libx264','-crf','22','-preset','veryfast','-threads','0'],
+    ['-c:v','libx264','-crf','22','-preset','ultrafast','-threads','0']
+   ]
+   for encoder in encoders:
     r=subprocess.run(base+encoder+['-pix_fmt','yuv420p',str(out)],capture_output=True,text=True,cwd=str(DATA))
     if r.returncode==0:break
    if r.returncode:raise RuntimeError(r.stderr[-900:])
@@ -420,49 +432,58 @@ def make(b:dict):
     save(job,{'engine':engine,'stage':'Rendering clips','progress':.6,'candidates':len(found)})
    done=[];cam_use,game_use,cam_checked=cam,game,not b.get('cam_auto')
    uploader=str((info.get('channel') or info.get('uploader') or '')) if url else ''
-   for i,c in enumerate(found):
+   if not cam_checked and found:
+    first_sid = sections[0].result() if sections else sid
+    cam_checked = True
+    try:
+     fc=facecam_detect.detect(DATA/(first_sid+'.mp4'))
+     save(job,{'facecam':{k:fc.get(k) for k in ('found','confidence','method','cam','reason')}})
+     if fc.get('found'):cam_use,game_use=fc['cam'],fc['game']
+    except Exception as e:save(job,{'facecam':{'found':False,'reason':'detection failed: '+str(e)[:80]}})
+   def render_clip(item):
+    i, c = item
     if not moments and c.get('transcript'):
      try:
       import smart
       model=smart._model(profile!='action' or mode=='deep')
       if model:
-       save(job,{'stage':f'Writing opening heading {i+1}/{len(found)}'})
        c['hook']=smart._heading(model,c['transcript'])
      except Exception:pass
     if sections:
      sid2=sections[i].result();real=section_start(p,DATA/(sid2+'.mp4'),max(0,c['start']-PAD));start=max(0,c['start']-real);end=min(_dur(DATA/(sid2+'.mp4')),start+c['end']-c['start']);words=c.get('words')
     else:sid2=sid;start=c['start'];end=c['end'];words=c.get('words')
-    if not cam_checked:
-     cam_checked=True
-     try:
-      fc=facecam_detect.detect(DATA/(sid2+'.mp4'))
-      save(job,{'facecam':{k:fc.get(k) for k in ('found','confidence','method','cam','reason')}})
-      if fc.get('found'):cam_use,game_use=fc['cam'],fc['game']
-     except Exception as e:save(job,{'facecam':{'found':False,'reason':'detection failed: '+str(e)[:80]}})
     lang=language or ('hinglish' if (video_lang.startswith('hi') or c.get('language')=='hi') else None)
-    body={'id':sid2,'start':start,'end':end,'layout':layout,'top':(top_h if isinstance(top_h,(int,float)) and .2<=top_h<=.5 else .32),'captions':True,'caption_style':style,'language':language,'hook':(' '.join(to_hinglish(w) for w in c.get('hook','').split()) if lang=='hinglish' else c.get('hook','')),
+    want_caps = b.get('captions', True) is not False
+    body={'id':sid2,'start':start,'end':end,'layout':layout,'top':(top_h if isinstance(top_h,(int,float)) and .2<=top_h<=.5 else .32),'captions':want_caps,'caption_style':style,'language':language,'hook':(' '.join(to_hinglish(w) for w in c.get('hook','').split()) if lang=='hinglish' else c.get('hook','')),
           'aspect':b.get('aspect','vertical'),'resolution':b.get('resolution',1080),'fps':b.get('fps',0),'title':c.get('title',''),'post_caption':c.get('title',''),'batch_id':job,'source_url':url,'cam':cam_use,'game':game_use,'features':c.get('features'),'weights_used':W,'moment_profile':profile,'focus_brief':focus_brief,'focus_match':c.get('focus_match'),'visual_review':c.get('visual_review')}
     for k in styling.KEYS+brands.KEYS+hooks.KEYS:
      if b.get(k) not in (None,''):body[k]=b[k]
     if b.get('credit_auto') and uploader and not body.get('credit'):body['credit']='Clip: '+uploader[:40]
-    if acc!='fast' or not c.get('words'):
-     # local speech model: only when you ask for Accurate / Best, or the video has no YouTube captions (local files, Twitch)
-     save(job,{'stage':f'Accurate captions {i+1}/{len(found)}'})
-     body['words']=transcribe(DATA/(sid2+'.mp4'),start,end,DATA,lambda m:None,lang,(large_v3() if acc=='best' else None))['words']
+    if not want_caps:
+     body['words']=[]
+    elif acc!='fast' or not c.get('words'):
+     asr_model = 'base' if acc in ('fast','ultra') else (large_v3() if acc=='best' else 'small')
+     body['words']=transcribe(DATA/(sid2+'.mp4'),start,end,DATA,lambda m:None,lang,asr_model)['words']
     else:
-     ws=c['words']       # YouTube's own captions: better than a local model on game audio, and no waiting
+     ws=c['words']
      if lang=='hinglish':
       ws=collapse_repeats([dict(w,text=ascii_fold(to_hinglish(w['text'])).strip()) for w in ws if str(w.get('text','')).strip()])
       ws=[w for w in ws if w['text']]
      body['words']=ws
-     save(job,{'caption_source':'YouTube captions' if url else 'Saved full-source transcript'})
     ej=export(body)['job']
-    while state.get(ej,{}).get('status')=='running':time.sleep(.7)
+    while state.get(ej,{}).get('status')=='running':time.sleep(.3)
     r=state[ej]
-    done.append({'viral':min(99,c['score']),'axes':axes(c.get('features') or {}),'file':ej,'start':c['start'],'end':c['end'],'title':c.get('title') or 'Clip %d'%(i+1),'hook':c.get('hook',''),'score':c['score'],'reason':c.get('reason',''),
-                 'error':r.get('error'),'srt':r.get('srt'),'visual_review':c.get('visual_review')})
-    save(job,{'clips':list(done),'stage':f'Rendered {i+1}/{len(found)}','progress':.6+.4*(i+1)/len(found)})
-   save(job,{'status':'done','stage':'Clips ready','progress':1,'elapsed_seconds':round(time.monotonic()-began,1)})
+    return {'viral':min(99,c['score']),'axes':axes(c.get('features') or {}),'file':ej,'start':c['start'],'end':c['end'],'title':c.get('title') or 'Clip %d'%(i+1),'hook':c.get('hook',''),'score':c['score'],'reason':c.get('reason',''),
+            'error':r.get('error'),'srt':r.get('srt'),'visual_review':c.get('visual_review'),'_idx':i}
+   from concurrent.futures import ThreadPoolExecutor, as_completed
+   with ThreadPoolExecutor(max_workers=2) as pool:
+    futures = {pool.submit(render_clip, (i, c)): i for i, c in enumerate(found)}
+    for f in as_completed(futures):
+     res = f.result()
+     done.append(res)
+     save(job,{'clips':list(done),'stage':f'Rendered {len(done)}/{len(found)}','progress':.6+.4*len(done)/len(found)})
+   done.sort(key=lambda x: -x['score'])
+   save(job,{'clips':list(done),'status':'done','stage':'Clips ready','progress':1,'elapsed_seconds':round(time.monotonic()-began,1)})
   except Exception as e:save(job,{'status':'error','error':str(e)[-600:]})
  threading.Thread(target=work,daemon=True).start();return {'job':job}
 LIVE={}
@@ -474,7 +495,7 @@ def live_render(sess,start,dur,why,chat_feature):
  o=sess.opts;name=uuid.uuid4().hex;out=DATA/(name+'.mp4');T={};_t=time.time()
  def lap(k):
   nonlocal _t;T[k]=round(time.time()-_t,1);_t=time.time()
- for enc in (['-c:v','h264_nvenc','-preset','p4','-cq','21'],['-c:v','libx264','-preset','veryfast','-crf','21']):
+ for enc in (['-c:v','h264_qsv','-global_quality','23','-preset','veryfast'],['-c:v','h264_mf','-b:v','6M'],['-c:v','h264_nvenc','-preset','p4','-cq','21'],['-c:v','libx264','-preset','veryfast','-crf','21','-threads','0']):
   r=subprocess.run(['ffmpeg','-y','-v','error','-ss',f'{start:.2f}','-i',str(sess.rec),'-t',f'{dur:.2f}',*enc,'-c:a','aac','-b:a','160k',str(out)],capture_output=True,text=True)
   if r.returncode==0 and out.exists() and out.stat().st_size>10000:break
  else:raise RuntimeError('Could not cut the clip from the recording: '+r.stderr[-150:])
