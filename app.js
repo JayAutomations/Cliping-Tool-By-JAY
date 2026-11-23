@@ -337,3 +337,347 @@ async function bulkDeleteClips(files) {
     alert('Delete failed: ' + e.message);
   }
 }
+
+// --- Batch Processing (Local Video / Folder / PC D: drive) ---
+let batchQueue = [];
+let batchRunning = false;
+let batchStopRequested = false;
+let batchTimer = null;
+let batchStartTime = 0;
+let batchTotalClips = 0;
+
+function formatBatchTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function renderBatchQueue() {
+  const box = $('batch-queue-box');
+  const list = $('batch-files-list');
+  const countEl = $('batch-queue-count');
+  if (!box || !list) return;
+
+  if (batchQueue.length === 0) {
+    box.style.display = 'none';
+    list.replaceChildren();
+    return;
+  }
+
+  box.style.display = 'block';
+  countEl.textContent = `${batchQueue.length} video${batchQueue.length === 1 ? '' : 's'}`;
+  list.replaceChildren();
+
+  batchQueue.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;margin-bottom:6px;font-size:13px;';
+    
+    const left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px;overflow:hidden;';
+    const num = document.createElement('span');
+    num.style.cssText = 'color:#ff2a9d;font-weight:700;min-width:24px;';
+    num.textContent = `${index + 1}.`;
+    const name = document.createElement('span');
+    name.style.cssText = 'color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px;';
+    name.textContent = item.name;
+    const size = document.createElement('span');
+    size.style.cssText = 'color:#888;font-size:11px;';
+    size.textContent = item.size_mb ? `(${item.size_mb} MB)` : '';
+    left.append(num, name, size);
+
+    const right = document.createElement('div');
+    right.style.cssText = 'display:flex;align-items:center;gap:10px;';
+    const statusTag = document.createElement('span');
+    statusTag.id = `batch-status-tag-${index}`;
+    statusTag.style.cssText = 'font-size:12px;color:#a0aec0;';
+    statusTag.textContent = item.status || 'Queued';
+
+    const rmBtn = document.createElement('button');
+    rmBtn.style.cssText = 'background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:14px;padding:2px 6px;';
+    rmBtn.textContent = '✖';
+    rmBtn.title = 'Remove';
+    rmBtn.onclick = () => {
+      if (batchRunning) return;
+      batchQueue.splice(index, 1);
+      renderBatchQueue();
+    };
+
+    right.append(statusTag, rmBtn);
+    row.append(left, right);
+    list.append(row);
+  });
+}
+
+// Local scan button
+if ($('local-scan-btn')) {
+  $('local-scan-btn').onclick = async () => {
+    const p = $('local-path-input').value.trim();
+    if (!p) {
+      if ($('local-scan-msg')) $('local-scan-msg').textContent = 'Kripya folder ya video file ka path enter karein (e.g. D:\\Videos)';
+      return;
+    }
+    if ($('local-scan-msg')) $('local-scan-msg').textContent = 'Scanning D: drive path...';
+    try {
+      const res = await request('/local/scan', { path: p });
+      if ($('local-scan-msg')) $('local-scan-msg').textContent = `✅ Found ${res.count} video file(s) in "${res.path}"`;
+      res.files.forEach(f => {
+        if (!batchQueue.some(x => x.path === f.path)) {
+          batchQueue.push({
+            name: f.name,
+            path: f.path,
+            size_mb: f.size_mb,
+            status: 'Queued'
+          });
+        }
+      });
+      renderBatchQueue();
+    } catch (e) {
+      if ($('local-scan-msg')) $('local-scan-msg').textContent = '❌ Error: ' + e.message;
+    }
+  };
+}
+
+// Folder input (native directory picker)
+if ($('folder-input')) {
+  $('folder-input').onchange = (e) => {
+    const files = Array.from(e.target.files || []);
+    const videoFiles = files.filter(f => /\.(mp4|mkv|mov|avi|webm|flv|ts|m4v)$/i.test(f.name));
+    if (!videoFiles.length) {
+      alert('Selected folder mein koi video files nahi mili.');
+      return;
+    }
+    videoFiles.forEach(f => {
+      batchQueue.push({
+        name: f.name,
+        path: null,
+        fileObj: f,
+        size_mb: Math.round(f.size / (1024 * 1024) * 10) / 10,
+        status: 'Queued'
+      });
+    });
+    renderBatchQueue();
+    if ($('local-scan-msg')) $('local-scan-msg').textContent = `✅ Added ${videoFiles.length} video(s) from folder selector.`;
+  };
+}
+
+if ($('batch-clear-btn')) {
+  $('batch-clear-btn').onclick = () => {
+    if (batchRunning) {
+      alert('Batch abhi chal raha hai. Pehle Stop karein.');
+      return;
+    }
+    batchQueue = [];
+    renderBatchQueue();
+    if ($('local-scan-msg')) $('local-scan-msg').textContent = '';
+  };
+}
+
+if ($('batch-stop-btn')) {
+  $('batch-stop-btn').onclick = () => {
+    if (!batchRunning) return;
+    batchStopRequested = true;
+    $('batch-stage-text').textContent = 'Stopping after current step...';
+  };
+}
+
+if ($('batch-start-btn')) {
+  $('batch-start-btn').onclick = async () => {
+    if (batchQueue.length === 0) {
+      alert('Batch queue khali hai. Pehle video ya folder select karein.');
+      return;
+    }
+    if (batchRunning) return;
+
+    batchRunning = true;
+    batchStopRequested = false;
+    batchStartTime = Date.now();
+    batchTotalClips = 0;
+
+    $('batch-start-btn').disabled = true;
+    $('batch-clear-btn').disabled = true;
+    $('batch-progress-container').style.display = 'block';
+    $('make-results').hidden = false;
+
+    if (batchTimer) clearInterval(batchTimer);
+    batchTimer = setInterval(() => {
+      const elapsed = (Date.now() - batchStartTime) / 1000;
+      if ($('batch-elapsed')) $('batch-elapsed').textContent = 'Elapsed: ' + formatBatchTime(elapsed);
+    }, 1000);
+
+    const totalVideos = batchQueue.length;
+    let completedVideos = 0;
+
+    for (let i = 0; i < totalVideos; i++) {
+      if (batchStopRequested) {
+        status('Batch execution stopped by user.');
+        break;
+      }
+
+      const item = batchQueue[i];
+      const tag = $(`batch-status-tag-${i}`);
+      if (tag) {
+        tag.textContent = '⏳ Processing...';
+        tag.style.color = '#00f2fe';
+      }
+
+      $('batch-current-title').textContent = `Processing Video ${i + 1} of ${totalVideos}: ${item.name}`;
+      const overallPct = Math.round((i / totalVideos) * 100);
+      $('batch-overall-pct').textContent = `${overallPct}% (${i} / ${totalVideos} completed)`;
+      $('batch-overall-bar').style.width = overallPct + '%';
+
+      try {
+        let videoId = null;
+        $('batch-stage-text').textContent = 'Preparing video source...';
+        $('batch-stage-pct').textContent = '10%';
+        $('batch-stage-bar').style.width = '10%';
+
+        if (item.path) {
+          const prep = await request('/local/prepare', { path: item.path });
+          videoId = prep.id;
+        } else if (item.fileObj) {
+          $('batch-stage-text').textContent = 'Uploading local video...';
+          const form = new FormData();
+          form.append('file', item.fileObj);
+          const upRes = await fetch('/upload', { method: 'POST', body: form });
+          const upJson = await upRes.json();
+          if (!upRes.ok) throw Error(upJson.detail || 'Upload failed');
+          videoId = upJson.id;
+        }
+
+        if (!videoId) throw Error('Could not obtain video source ID.');
+
+        $('batch-stage-text').textContent = 'AI finding moments & rendering clips...';
+        $('batch-stage-pct').textContent = '25%';
+        $('batch-stage-bar').style.width = '25%';
+
+        const makePayload = {
+          id: videoId,
+          count: Number($('count').value) || 4,
+          mode: $('mode').value,
+          accurate: $('accurate').value,
+          min_len: Number($('minlen').value) || 30,
+          max_len: Number($('length').value) || 60,
+          layout: makeLayout(),
+          aspect: $('aspect').value,
+          resolution: Number($('resolution').value),
+          fps: Number($('fps').value),
+          cam: rect.cam,
+          game: rect.game,
+          top: Number($('top').value) / 100,
+          caption_style: style,
+          language: $('language').value === 'auto' ? '' : $('language').value
+        };
+
+        const { job } = await request('/make', makePayload);
+        const shownInBatch = new Set();
+
+        for (;;) {
+          if (batchStopRequested) break;
+          const s = await request('/make/' + job);
+          const prog = Math.round((s.progress || 0) * 100);
+          $('batch-stage-text').textContent = (s.stage || s.status || 'Processing') + ` · ${prog}%`;
+          $('batch-stage-pct').textContent = `${prog}%`;
+          $('batch-stage-bar').style.width = `${Math.max(5, prog)}%`;
+
+          (s.clips || []).forEach(c => {
+            if (shownInBatch.has(c.file)) return;
+            shownInBatch.add(c.file);
+            batchTotalClips++;
+            $('batch-clips-counter').textContent = `Clips created: ${batchTotalClips}`;
+
+            const d = document.createElement('div');
+            d.className = 'mk';
+            d.dataset.file = c.file;
+
+            if (c.error) {
+              d.textContent = 'Failed: ' + c.error.slice(0, 120);
+            } else {
+              const vid = document.createElement('video');
+              vid.src = '/media/' + c.file;
+              vid.controls = true;
+              vid.preload = 'metadata';
+
+              const t = document.createElement('b');
+              t.textContent = (item.name ? `[${item.name}] ` : '') + (c.title || 'Clip');
+
+              const m = document.createElement('small');
+              m.textContent = Math.round(c.start) + '–' + Math.round(c.end) + 's · score ' + c.score + (c.hook ? ' · "' + c.hook + '"' : '');
+
+              const a = document.createElement('a');
+              a.href = '/media/' + c.file;
+              a.download = 'neonclipping-' + c.file + '.mp4';
+              a.textContent = 'Download MP4';
+
+              const edit = document.createElement('button');
+              edit.textContent = 'Edit clip';
+              edit.onclick = () => openSavedClip(d.dataset.file).catch(e => status(e.message));
+
+              const del = document.createElement('button');
+              del.className = 'card-del-btn';
+              del.textContent = '🗑️ Delete';
+              del.onclick = async () => {
+                if (!confirm('Kya aap is clip ko delete karna chahte hain?')) return;
+                try {
+                  await request('/clips/delete', { id: c.file });
+                  d.remove();
+                  updateMakeBulk();
+                  await refreshLibrary();
+                  status('Clip delete ho gayi.');
+                } catch (e) {
+                  status('Delete failed: ' + e.message);
+                }
+              };
+
+              const selectBar = document.createElement('label');
+              selectBar.className = 'clip-select-bar';
+              const chk = document.createElement('input');
+              chk.type = 'checkbox';
+              chk.checked = true;
+              chk.className = 'make-clip-chk';
+              chk.dataset.file = c.file;
+              chk.onchange = updateMakeBulk;
+              const chkTxt = document.createElement('span');
+              chkTxt.textContent = ' Select';
+              selectBar.append(chk, chkTxt);
+
+              d.append(selectBar, vid, t, m, a, edit, del);
+            }
+            $('make-grid').prepend(d);
+            updateMakeBulk();
+          });
+
+          if (s.status === 'error') throw Error(s.error);
+          if (s.status === 'done') break;
+          await sleep(1000);
+        }
+
+        completedVideos++;
+        if (tag) {
+          tag.textContent = `✅ Done (${shownInBatch.size} clips)`;
+          tag.style.color = '#48bb78';
+        }
+      } catch (err) {
+        if (tag) {
+          tag.textContent = `❌ ${err.message.slice(0, 30)}`;
+          tag.style.color = '#ff6b6b';
+        }
+      }
+    }
+
+    clearInterval(batchTimer);
+    batchTimer = null;
+    batchRunning = false;
+    $('batch-start-btn').disabled = false;
+    $('batch-clear-btn').disabled = false;
+
+    const finalPct = Math.round((completedVideos / totalVideos) * 100);
+    $('batch-overall-pct').textContent = `${finalPct}% (${completedVideos} / ${totalVideos} completed)`;
+    $('batch-overall-bar').style.width = finalPct + '%';
+    $('batch-stage-text').textContent = batchStopRequested ? 'Batch stopped by user.' : `🎉 All done! ${completedVideos} videos processed, ${batchTotalClips} clips created.`;
+    $('batch-stage-pct').textContent = '100%';
+    $('batch-stage-bar').style.width = '100%';
+
+    await refreshLibrary();
+    status(`Batch processing complete! ${batchTotalClips} clips created in My clips.`);
+  };
+}

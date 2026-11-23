@@ -12,9 +12,11 @@ from highlights import rank
 import smart
 from previews import prepare
 from fastapi.responses import FileResponse
+from gdrive import is_gdrive_url, download_gdrive
 
 def allowed(url):
     parsed=urlparse(url);host=(parsed.hostname or '').lower()
+    if is_gdrive_url(url):return True
     return parsed.scheme in ('http','https') and not parsed.username and not parsed.password and (host in ('youtu.be','youtube.com','www.youtube.com','m.youtube.com','twitch.tv','www.twitch.tv','clips.twitch.tv','kick.com','www.kick.com')) and parsed.port in (None,80,443)
 
 def attach(app,DATA,state,probe):
@@ -47,6 +49,14 @@ def attach(app,DATA,state,probe):
             except (OSError,ValueError,subprocess.SubprocessError):pass
         directory=DATA/job;directory.mkdir(exist_ok=True)
         target=DATA/(job+'.mp4')
+        if is_gdrive_url(url):
+            def gdrive_progress(got, total):
+                msg=f'Downloading Google Drive: {got/1048576:.1f} MB'+(f' / {total/1048576:.1f} MB' if total else '')
+                state[job].update(message=msg,stage=msg,progress=min(.3,got/total*.3) if total else .1)
+            download_gdrive(url, target, gdrive_progress)
+            probe(target)
+            (DATA/(job+'.request.json')).write_text(json.dumps({'url':url}),encoding='utf-8')
+            return job,target
         def progress(event):
             if event.get('status')=='downloading':
                 got=event.get('downloaded_bytes',0);total=event.get('total_bytes') or event.get('total_bytes_estimate') or 0
@@ -72,7 +82,7 @@ def attach(app,DATA,state,probe):
         if url:
             try:valid=allowed(url)
             except ValueError:valid=False
-            if not valid:raise HTTPException(400,'Paste a full YouTube, Twitch or Kick video URL.')
+            if not valid:raise HTTPException(400,'Paste a full YouTube, Twitch, Kick or Google Drive video URL.')
             return url,None
         id=str(body.get('id',''));return '',source_path(id)
 

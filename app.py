@@ -11,6 +11,7 @@ import uvicorn
 import math
 from layouts import CATALOG, geometry, render_graph, text_positions, output_settings
 from captions import transcribe, large_v3, write as write_captions, ANIMS, ascii_fold, collapse_repeats
+from gdrive import is_gdrive_url
 import styling
 import brands
 import hooks
@@ -105,6 +106,51 @@ def delete_clips(body:dict):
     except Exception:pass
   deleted+=1
  return {'ok':True,'deleted':deleted}
+
+@app.post('/local/scan')
+def local_scan(body:dict):
+ raw=str(body.get('path','')).strip().strip('"').strip("'")
+ if not raw:raise HTTPException(400,'Kripya valid folder ya video path enter karein (e.g. D:\\Videos)')
+ target=Path(raw)
+ if not target.exists():raise HTTPException(404,f'Path nahi mila: {raw}. Kripya path check karein.')
+ valid_exts={'.mp4','.mkv','.mov','.avi','.webm','.flv','.ts','.m4v'}
+ files_found=[]
+ if target.is_file():
+  if target.suffix.lower() in valid_exts:
+   files_found.append({'name':target.name,'path':str(target.resolve()),'size_mb':round(target.stat().st_size/(1024*1024),1)})
+  else:raise HTTPException(400,f'Supported video file nahi hai ({target.suffix}). MP4, MKV, MOV files select karein.')
+ elif target.is_dir():
+  for p in sorted(target.iterdir()):
+   if p.is_file() and p.suffix.lower() in valid_exts:
+    try:files_found.append({'name':p.name,'path':str(p.resolve()),'size_mb':round(p.stat().st_size/(1024*1024),1)})
+    except Exception:pass
+  if not files_found:
+   for p in sorted(target.rglob('*')):
+    if p.is_file() and p.suffix.lower() in valid_exts:
+     try:files_found.append({'name':p.name,'path':str(p.resolve()),'size_mb':round(p.stat().st_size/(1024*1024),1)})
+     except Exception:pass
+    if len(files_found)>=100:break
+ if not files_found:raise HTTPException(404,'Is folder mein koi playable video file (.mp4, .mkv, .mov etc.) nahi mili.')
+ return {'ok':True,'count':len(files_found),'path':str(target.resolve()),'files':files_found}
+
+@app.post('/local/prepare')
+def local_prepare(body:dict):
+ raw=str(body.get('path','')).strip().strip('"').strip("'")
+ p=Path(raw)
+ if not p.exists() or not p.is_file():raise HTTPException(404,f'Video file nahi mili: {raw}')
+ job_id=uuid.uuid4().hex;target_mp4=DATA/(job_id+'.mp4')
+ if p.suffix.lower()=='.mp4':
+  try:os.link(str(p.resolve()),str(target_mp4))
+  except Exception:
+   try:shutil.copyfile(str(p.resolve()),str(target_mp4))
+   except Exception as e:raise HTTPException(500,f'File link/copy fail: {str(e)}')
+ else:
+  r=subprocess.run(['ffmpeg','-y','-v','error','-i',str(p.resolve()),'-c','copy',str(target_mp4)],capture_output=True,text=True)
+  if r.returncode!=0:
+   r2=subprocess.run(['ffmpeg','-y','-v','error','-i',str(p.resolve()),'-c:v','libx264','-preset','fast','-crf','22','-c:a','aac',str(target_mp4)],capture_output=True,text=True)
+   if r2.returncode!=0:raise HTTPException(400,f'Video conversion failed: {r2.stderr[-200:]}')
+ meta=probe(target_mp4)
+ return {'id':job_id,'name':p.name,**meta}
 
 def source_range(b):
  id=str(b.get('id',''))
@@ -261,10 +307,15 @@ def make(b:dict):
  top_h=b.get('top');cam=b.get('cam') or {'x':0,'y':0,'w':.25,'h':.3};game=b.get('game') or {'x':.25,'y':0,'w':.75,'h':1}
  job=uuid.uuid4().hex;save(job,{'id':job,'status':'running','stage':'Starting','progress':0,'clips':[],'source':{'url':url}})
  def work():
+  nonlocal url,src0
   began=time.monotonic()
   try:
    from smart import find
    fast=False;title='';yt_words=None;video_lang=''
+   if url and is_gdrive_url(url):
+    save(job,{'stage':'Downloading Google Drive video...','progress':.03})
+    sid,p=app.neon['download'](url,job)
+    src0=p;url=None;title=p.stem
    if url:
     save(job,{'stage':'Reading video info','progress':.01})
     with _yt({'skip_download':True}) as y:info=y.extract_info(url,download=False)

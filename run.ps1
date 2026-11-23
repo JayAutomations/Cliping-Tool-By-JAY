@@ -39,7 +39,7 @@ if (-not (Test-Path .venv/Scripts/python.exe)) {
 
 # Start server and wait until ready before opening browser
 Write-Host "Cliping Tool By JAY server start ho raha hai..." -ForegroundColor Cyan
-$serverProcess = Start-Process -FilePath "$PSScriptRoot\.venv\Scripts\python.exe" -ArgumentList "app.py" -WorkingDirectory "$PSScriptRoot" -PassThru
+$serverProcess = Start-Process -FilePath "$PSScriptRoot\.venv\Scripts\python.exe" -ArgumentList "app.py" -WorkingDirectory "$PSScriptRoot" -WindowStyle Hidden -PassThru
 
 # Wait for server to be responsive
 $ready = $false
@@ -54,12 +54,5 @@ for ($i = 0; $i -lt 30; $i++) {
     } catch {}
 }
 
-if ($ready) {
-    Write-Host "Tool live hai! Browser open kar rahe hain..." -ForegroundColor Green
-    Start-Process 'http://127.0.0.1:8770'
-} else {
-    Write-Host "Server start ho raha hai, browser open kar rahe hain..." -ForegroundColor Yellow
-    Start-Process 'http://127.0.0.1:8770'
-}
-
-$serverProcess.WaitForExit()
+Start-Process 'http://127.0.0.1:8770'
+exit 0

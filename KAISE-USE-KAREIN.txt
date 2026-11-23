@@ -2,37 +2,49 @@
           CLIPING TOOL BY JAY - KAISE USE KAREIN
 =====================================================
 
-Yeh tool lambi videos (YouTube, Twitch, Kick ya MP4) ko 
-auto-captioned 9:16 vertical clips (Shorts/Reels/TikTok) 
-mein convert karta hai. Yeh 100% free hai aur aapke PC 
-par hi offline chalta hai.
+Yeh tool lambi videos (YouTube, Twitch, Kick, Google Drive ya local PC/D: drive MP4) 
+ko auto-captioned 9:16 vertical clips (Shorts/Reels/TikTok) mein convert karta hai.
+Yeh 100% free hai aur aapke PC par hi offline chalta hai.
 
 -----------------------------------------------------
-1. PEHLI BAAR SETUP (SIRF EK BAAR):
+1. TOOL CHALU KAISE KAREIN (SILENT LAUNCHER):
 -----------------------------------------------------
-1. Is ZIP file par Right-Click karein aur "Extract All..." (unzip) karein.
-2. Jo naya folder banega, uske andar jayein.
-3. "Start-Cliping-Tool-By-JAY.bat" file par DOUBLE-CLICK karein.
-4. Pehli baar yeh tool zaroori files aur packages taiyar karega
-   (isme 2-3 minute lag sakte hain).
-5. Jaise hi taiyar hoga, aapke Google Chrome ya browser mein
-   yeh address apne aap khul jayega:
+1. Desktop par "Cliping Tool By JAY" shortcut par double-click karein, ya fir
+   folder ke andar "Start-Cliping-Tool-By-JAY.vbs" (ya .bat) par double-click karein.
+2. Ab koi bhi Black Terminal/Console window nahi khulegi! Tool background mein 
+   silent start hoga aur seedha aapke Chrome/Browser mein khul jayega:
    http://127.0.0.1:8770
 
 -----------------------------------------------------
-2. CLIPS KAISE BANANI HAIN:
+2. GOOGLE DRIVE SE VIDEO CLIPPING:
 -----------------------------------------------------
-1. "Start-Cliping-Tool-By-JAY.bat" par double-click karke tool chalu karein.
-2. Browser mein video link paste karein (ya "Upload video" se MP4 daalein).
-3. "Facecam position" select karein jahan webcam hai (Top-left, Top-right, etc.).
-4. "⚡ Make clips" button dabayein.
-5. 1 se 2 minute mein video ke best moments vertical clip bankar aayenge!
-6. "Download MP4" button dabakar clip save kar lein.
+1. Google Drive link (e.g. https://drive.google.com/file/d/.../view) ko 
+   URL box mein paste karein.
+2. "⚡ Make clips" button dabayein.
+3. Tool apne aap Google Drive se video download karke vertical clips bana dega!
 
 -----------------------------------------------------
-3. TOOL BAND KAISE KAREIN:
+3. APNI PC / D: DRIVE KI VIDEOS YA POORA FOLDER BATCH CLIP KAREIN:
 -----------------------------------------------------
-Jo black terminal window khuli hai, bas use close (X) kar dein.
+Agar aapke paas apni videos D: drive ya PC mein download hain:
+Tarika A: "📂 Select Video Folder" par click karein aur poora folder select karein.
+Tarika B: "Select local video or folder" box mein apna path likhein (e.g. D:\Videos ya D:\Videos\gameplay.mp4)
+          aur "🔍 Scan Local Folder / File" button dabayein.
+1. Batch Video Queue mein sabhi videos list ho jayengi.
+2. "⚡ Start Batch Clipping" button dabayein.
+3. Screen par LIVE PROGRESS dikhega:
+   - "Processing Video 1 of 5: [video-name]"
+   - Overall Batch Progress Bar (%)
+   - Current Video Analysis & Rendering Bar (%)
+   - Live Clips Created Counter
+   - Banate hi sabhi clips real-time screen par aati jayengi!
+
+-----------------------------------------------------
+4. CLIPS DOWNLOAD AUR DELETE KAREIN:
+-----------------------------------------------------
+- Clip ke paas "Download MP4" ya "SRT" se single clip save karein.
+- Checkbox se clips tick karke "📥 Download Selected" ya "📦 Download All as ZIP" karein.
+- Kisi clip ko hatane ke liye "🗑️ Delete" ya multiple select karke "🗑️ Delete Selected" karein.
 
 -----------------------------------------------------
 Developer & Support:
