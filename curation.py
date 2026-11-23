@@ -66,7 +66,7 @@ def profile_weights(weights,profile='balanced'):
 
 def transcript_candidates(words,duration,length,count,focus=''):
     if not words or count<1:return []
-    count=max(1,min(30,count));length=min(length,duration);out=[]
+    count=max(1,min(500,count));length=min(length,duration);out=[]
     markers=re.compile(r'\b(but|actually|instead|why|how|because|wait|wrong|mistake|never|finally|imagine|secret|lekin|kyun|kaise|galti|pata|achanak)\b',re.I)
     for bucket in range(count):
         a=duration*bucket/count;b=duration*(bucket+1)/count

@@ -47,6 +47,13 @@ Tarika B: "Select local video or folder" box mein apna path likhein (e.g. D:\Vid
 - Kisi clip ko hatane ke liye "🗑️ Delete" ya multiple select karke "🗑️ Delete Selected" karein.
 
 -----------------------------------------------------
+5. UNLIMITED CLIPS AUR 3 SE 10 MINUTES KI LENGTH:
+-----------------------------------------------------
+- Clip Count: Ab aap 12 clips tak restricted nahi hain! 5, 10, 25, 50, 100, 200 ya "Unlimited (500)" button dabayein, ya box mein manchaha number likhein.
+- Clip Length: Ab 30s, 1 min (60s), 2 min ke sath-sath 3 min, 4 min, 5 min, 6 min, 7 min, 8 min, 9 min aur 10 minutes (600s) ki clips ka full support hai!
+- Ek click mein quick chip (jaise 3 min, 5 min, ya 10 min) select karke clip banayein.
+
+-----------------------------------------------------
 Developer & Support:
 - Created by: JAY Automations
 - Instagram: @jayautomations

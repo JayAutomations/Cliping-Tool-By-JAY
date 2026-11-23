@@ -159,7 +159,7 @@ def source_range(b):
  try:start=float(b.get('start',0));end=float(b.get('end',min(30,m['duration'])))
  except (TypeError,ValueError):raise HTTPException(400,'Invalid time range.')
  if not all(map(math.isfinite,(start,end))) or not 0<=start<end<=m['duration']+.1:raise HTTPException(400,'Check start and end times.')
- if end-start>600:raise HTTPException(400,'Choose a clip shorter than 10 minutes.')
+ if end-start>900:raise HTTPException(400,'Choose a clip shorter than 15 minutes.')
  return id,src,m,start,end
 
 @app.post('/transcribe')
@@ -275,7 +275,7 @@ def ai_found(moments,yt_words,duration):
  for m in moments:
   try:s=float(m['start']);e=float(m['end'])
   except (KeyError,TypeError,ValueError):continue
-  if not(math.isfinite(s) and math.isfinite(e)) or not 0<=s<e or s>=duration or e-s>180:continue
+  if not(math.isfinite(s) and math.isfinite(e)) or not 0<=s<e or s>=duration or e-s>900:continue
   e=min(e,duration);w=captions_yt.window(yt_words,s,e) if yt_words else None
   out.append({'start':s,'end':e,'score':50,'rank':.5,'title':str(m.get('title') or '')[:90],'hook':str(m.get('hook') or '')[:90],'words':w or None,'features':{'llm':.85},'reason':'Picked from your AI answer','language':None})
  if not out:raise RuntimeError('None of the pasted moments fit inside this video.')
@@ -287,15 +287,15 @@ def make(b:dict):
  audio + transcript, then fetch just those video sections. Clips stream into state[job]['clips']."""
  url,src0=app.neon['new_source'](b);save=app.neon['save']
  try:
-  count=max(1,min(12,int(b.get('count',4))));raw_max=float(b.get('max_len',b.get('length',60)));raw_min=float(b.get('min_len',30))
+  count=max(1,min(500,int(b.get('count',25))));raw_max=float(b.get('max_len',b.get('length',60)));raw_min=float(b.get('min_len',30))
   if not (math.isfinite(raw_max) and math.isfinite(raw_min)):raise ValueError()
-  max_len=max(10,min(180,raw_max));min_len=max(5,min(max_len,raw_min))
+  max_len=max(10,min(900,raw_max));min_len=max(5,min(max_len,raw_min))
  except (TypeError,ValueError,OverflowError):raise HTTPException(400,'Choose a valid clip count and length range.')
  if raw_min>raw_max:raise HTTPException(400,'Minimum clip length is longer than the maximum. Make the minimum smaller or the maximum bigger.')
  moments=b.get('moments')
  if moments is not None:
-  if not isinstance(moments,list) or not 1<=len(moments)<=40 or not all(isinstance(m,dict) for m in moments):raise HTTPException(400,'Moments must be a list of 1 to 40 items with start and end.')
-  count=min(24,len(moments))
+  if not isinstance(moments,list) or not 1<=len(moments)<=500 or not all(isinstance(m,dict) for m in moments):raise HTTPException(400,'Moments must be a list of 1 to 500 items with start and end.')
+  count=min(500,len(moments))
  mode='deep' if b.get('mode')=='deep' else 'fast'
  profile=b.get('moment_profile','balanced')
  if profile not in curation.PROFILES:raise HTTPException(400,'Choose Balanced, Action or Dialogue moments.')

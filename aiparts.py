@@ -105,7 +105,7 @@ def _json_blobs(text):
 LINE = re.compile(r'(?P<a>\d{1,2}:\d{2}(?::\d{2})?)\s*(?:-|–|—|to|->)\s*(?P<b>\d{1,2}:\d{2}(?::\d{2})?)\s*[-:–—|]?\s*(?P<rest>.*)')
 
 
-def parse_answers(text, duration=None, min_len=8, max_len=180):
+def parse_answers(text, duration=None, min_len=8, max_len=900):
     """-> (moments, rejected). Understands JSON (several answers pasted together are fine) and lines like '12:30-13:10 - title'."""
     cand = []
 
@@ -172,8 +172,8 @@ def attach(app):
             raise HTTPException(400, 'Paste a YouTube video link.')
         try:
             per_part = max(1, min(10, int(b.get('per_part', 3))))
-            min_len = max(8, min(120, int(b.get('min_len', 30))))
-            max_len = max(min_len + 5, min(180, int(b.get('max_len', 60))))
+            min_len = max(8, min(600, int(b.get('min_len', 30))))
+            max_len = max(min_len + 5, min(900, int(b.get('max_len', 60))))
             parts = int(b['parts']) if b.get('parts') else None
         except (TypeError, ValueError):
             raise HTTPException(400, 'Check the numbers for parts, moments per part and clip length.')

@@ -552,7 +552,7 @@ if ($('batch-start-btn')) {
 
         const makePayload = {
           id: videoId,
-          count: Number($('count').value) || 4,
+          count: Number($('count').value) || 25,
           mode: $('mode').value,
           accurate: $('accurate').value,
           min_len: Number($('minlen').value) || 30,
@@ -681,3 +681,37 @@ if ($('batch-start-btn')) {
     status(`Batch processing complete! ${batchTotalClips} clips created in My clips.`);
   };
 }
+
+// Quick Clip Length presets (30s, 60s, 2m, 3m, 4m, 5m, 6m, 7m, 8m, 9m, 10m)
+document.querySelectorAll('[data-clip-len]').forEach(btn => {
+  btn.onclick = () => {
+    const sec = Number(btn.dataset.clipLen);
+    document.querySelectorAll('[data-clip-len]').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    $('length').value = sec;
+    const minSec = sec <= 60 ? Math.max(15, Math.round(sec * 0.5)) : Math.round(sec * 0.7);
+    $('minlen').value = minSec;
+    status(`Clip length set to ${sec >= 60 ? (sec / 60) + ' min' : sec + 's'} (Min: ${minSec}s, Max: ${sec}s)`);
+  };
+});
+
+// Quick Clip Count presets (5, 10, 15, 25, 50, 100, 200, 500)
+document.querySelectorAll('[data-clip-count]').forEach(btn => {
+  btn.onclick = () => {
+    const cnt = Number(btn.dataset.clipCount);
+    document.querySelectorAll('[data-clip-count]').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    $('count').value = cnt;
+    status(cnt >= 500 ? 'Unlimited / Max clips mode (500 clips)' : `${cnt} clips selected.`);
+  };
+});
+
+$('length')?.addEventListener('input', () => {
+  const val = Number($('length').value);
+  document.querySelectorAll('[data-clip-len]').forEach(b => b.classList.toggle('on', Number(b.dataset.clipLen) === val));
+});
+
+$('count')?.addEventListener('input', () => {
+  const val = Number($('count').value);
+  document.querySelectorAll('[data-clip-count]').forEach(b => b.classList.toggle('on', Number(b.dataset.clipCount) === val));
+});

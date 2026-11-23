@@ -111,16 +111,17 @@ def snap(c,words,min_len,max_len):
 
 def find(src,duration,count,length,report,language=None,data=None,min_len=None,motion=True,words=None,deep=False,weights=None,select=True,profile='balanced',brief='',includes=(),excludes=()):
     """Return up to `count` clips, best first. Always returns `count` when the source is long enough."""
-    pool=(count*4+2) if deep else (count*2+1 if count<6 else count+4)
-    if not words:pool=count+2 if not deep else min(pool,count*2+2)      # no free transcript: every candidate costs a speech-model pass, so read fewer
+    pool=min(1000,(count*4+2) if deep else max(count+4,int(count*1.5)))
+    if not words:pool=min(1000,count+2 if not deep else count*2+2)      # no free transcript: every candidate costs a speech-model pass, so read fewer
     clips=[];extra=excite.seconds_signal(words,duration) if words else None
     weights=weights or curation.profile_weights(learn.DEFAULT,profile)
+    orig_length=length
     while length>=10:
         clips=rank(src,duration,pool,length,lambda s:report(.0+.3*s/max(duration,1),f'Scanning movement + audio: {int(s)}/{int(duration)}s'),motion,extra)
         if len(clips)>=min(pool,count) or duration<length*count*.6 and length<=15:break
         length=max(10,length*.7)   # short source: shrink windows until enough clips fit
     if words and profile!='action':
-        dialogue=curation.transcript_candidates(words,duration,length,max(2,pool//2),brief)
+        dialogue=curation.transcript_candidates(words,duration,orig_length,max(2,pool//2),brief)
         clips=clips[:max(count,pool-len(dialogue))]+dialogue
     model=_model(deep or profile!='action');engine='mixed activity + transcript'
     for i,c in enumerate(clips):
@@ -131,7 +132,7 @@ def find(src,duration,count,length,report,language=None,data=None,min_len=None,m
                 r={'words':window(words,c['start'],c['end']),'language':'yt'}
             else:r=transcribe(src,c['start'],c['end'],data,lambda m:None,language,'small' if deep else SCOUT_MODEL)
             text=' '.join(w['text'] for w in r['words'])
-            c['transcript']=text;c['language']=r.get('language');c['words']=r['words'];snap(c,c['words'],min_len or length*.5,length)
+            c['transcript']=text;c['language']=r.get('language');c['words']=r['words'];snap(c,c['words'],min_len or orig_length*.5,orig_length)
             text=' '.join(w['text'] for w in c['words']);c['transcript']=text
             if not curation.passes_filters(text,includes,excludes):c['excluded']=True;continue
             c['focus_match']=curation.focus_match(brief,text) if brief else None
